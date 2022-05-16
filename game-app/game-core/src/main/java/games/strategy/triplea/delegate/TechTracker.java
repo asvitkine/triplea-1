@@ -41,6 +41,10 @@ public class TechTracker {
 
   private final Map<Key, Object> cache = new ConcurrentHashMap<>();
 
+  public void onTechnologyChanged() {
+    cache.clear();
+  }
+
   public int getAirDefenseBonus(GamePlayer player, UnitType type) {
     final Supplier<Integer> getter =
         () -> getSumOfBonuses(TechAbilityAttachment::getAirDefenseBonus, type, player);
@@ -190,16 +194,30 @@ public class TechTracker {
         .sum();
   }
 
-  private boolean getUnitAbilitiesGained(
-      String filterForAbility, UnitType unitType, GamePlayer player) {
-    return getCurrentTechAdvances(player).stream()
+  static int sumIntegerMap(
+      final Function<TechAbilityAttachment, IntegerMap<UnitType>> mapper,
+      final UnitType ut,
+      final Collection<TechAdvance> techAdvances) {
+    return techAdvances.stream()
         .map(TechAbilityAttachment::get)
         .filter(Objects::nonNull)
-        .map(TechAbilityAttachment::getUnitAbilitiesGained)
-        .map(m -> m.get(unitType))
-        .filter(Objects::nonNull)
-        .flatMap(Collection::stream)
-        .anyMatch(filterForAbility::equals);
+        .map(mapper)
+        .mapToInt(m -> m.getInt(ut))
+        .sum();
+  }
+
+  private int getUnitAbilitiesGained(
+      String filterForAbility, UnitType unitType, GamePlayer player) {
+    return getCurrentTechAdvances(player).stream()
+            .map(TechAbilityAttachment::get)
+            .filter(Objects::nonNull)
+            .map(TechAbilityAttachment::getUnitAbilitiesGained)
+            .map(m -> m.get(unitType))
+            .filter(Objects::nonNull)
+            .flatMap(Collection::stream)
+            .anyMatch(filterForAbility::equals)
+        ? 1
+        : 0;
   }
 
   @VisibleForTesting
@@ -217,7 +235,37 @@ public class TechTracker {
   }
 
   private Collection<TechAdvance> getCurrentTechAdvances(GamePlayer player) {
+    // When can this change?
+    // 1. When Tech frontier changes. Seems it's modifiable, so should add a listener.
+    //     Q. How can it be modified?
+    //     there is createDefaultTechAdvances()...
+    //   also a trigger that say: availableTech
+    //      but availableTech doesn't really change things, right?
+    // 2. When TechAttachment.get(gamePlayer); changes. (an attachment is added?)
+    //    Q. Does this ever change outside of parsing?
+    // 3. When TechAdvance.getTechAdvances() changes.
+    //     this version is just technologyFrontier.getTechs()
+    //     Does that ever change?
+    // 4. When hasTech() changes. This seems to be through MutableProperty on TechAttachment.
+    // i.e. it calls through the TechAttachment, which is an attachment that can change.
+    // How do attachments change? Well, via triggers that change them? Yes, but
+    // "tech" option calls through to this.
+    // Perhaps, we should use a MutableProperty subclass that tells this class about it?
     return getCurrentTechAdvances(player, data.getTechnologyFrontier());
+  }
+
+  @VisibleForTesting
+  static int sumNumbers(
+      final ToIntFunction<TechAbilityAttachment> mapper,
+      final String attachmentType,
+      final Collection<TechAdvance> techAdvances) {
+    return techAdvances.stream()
+        .map(TechAbilityAttachment::get)
+        .filter(Objects::nonNull)
+        .filter(i -> i.getAttachedTo().toString().equals(attachmentType))
+        .mapToInt(mapper)
+        .filter(i -> i > 0)
+        .sum();
   }
 
   /**
