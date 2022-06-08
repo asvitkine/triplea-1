@@ -252,6 +252,10 @@ public class TechTracker {
         .sum();
   }
 
+  private Collection<TechAdvance> getCurrentTechAdvances(GamePlayer player) {
+    return getCurrentTechAdvances(player, data.getTechnologyFrontier());
+  }
+
   /**
    * Returns what tech advances this player already has successfully researched (including ones that
    * may not be in their tech frontier).
