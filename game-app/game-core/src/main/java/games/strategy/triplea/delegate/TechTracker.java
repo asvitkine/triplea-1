@@ -206,18 +206,16 @@ public class TechTracker {
         .sum();
   }
 
-  private int getUnitAbilitiesGained(
+  private boolean getUnitAbilitiesGained(
       String filterForAbility, UnitType unitType, GamePlayer player) {
     return getCurrentTechAdvances(player).stream()
-            .map(TechAbilityAttachment::get)
-            .filter(Objects::nonNull)
-            .map(TechAbilityAttachment::getUnitAbilitiesGained)
-            .map(m -> m.get(unitType))
-            .filter(Objects::nonNull)
-            .flatMap(Collection::stream)
-            .anyMatch(filterForAbility::equals)
-        ? 1
-        : 0;
+        .map(TechAbilityAttachment::get)
+        .filter(Objects::nonNull)
+        .map(TechAbilityAttachment::getUnitAbilitiesGained)
+        .map(m -> m.get(unitType))
+        .filter(Objects::nonNull)
+        .flatMap(Collection::stream)
+        .anyMatch(filterForAbility::equals);
   }
 
   @VisibleForTesting
