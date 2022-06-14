@@ -18,7 +18,7 @@ import org.triplea.java.collections.IntegerMap;
 public class UnitCollection extends GameDataComponent implements Collection<Unit> {
   private static final long serialVersionUID = -3534037864426122864L;
 
-  private final List<Unit> units = new ArrayList<>();
+  private final HashSet<Unit> units = new HashSet<>();
   private final NamedUnitHolder holder;
 
   public UnitCollection(final NamedUnitHolder holder, final GameData data) {
@@ -28,7 +28,14 @@ public class UnitCollection extends GameDataComponent implements Collection<Unit
 
   @Override
   public boolean add(final Unit unit) {
-    units.add(unit);
+    if (!units.add(unit)) {
+      int it = 0;
+      for (int i = getData().getHistory().getChanges().size() -1; i > 0; i++) {
+        if (it++ == 10) break;
+        System.err.println(getData().getHistory().getChanges().get(i));
+      }
+      new RuntimeException(System.identityHashCode(this) + "").printStackTrace();
+    }
     holder.notifyChanged();
     return true;
   }
@@ -36,6 +43,14 @@ public class UnitCollection extends GameDataComponent implements Collection<Unit
   @Override
   public boolean addAll(final Collection<? extends Unit> units) {
     final boolean result = this.units.addAll(units);
+    if (!result) {
+      int it = 0;
+      for (int i = getData().getHistory().getChanges().size() -1; i > 0; i++) {
+        if (it++ == 10) break;
+        System.err.println(getData().getHistory().getChanges().get(i));
+      }
+      new RuntimeException(System.identityHashCode(this) + "").printStackTrace();
+    }
     holder.notifyChanged();
     return result;
   }
@@ -111,7 +126,7 @@ public class UnitCollection extends GameDataComponent implements Collection<Unit
   }
 
   public Collection<Unit> getUnits() {
-    return Collections.unmodifiableList(units);
+    return Collections.unmodifiableSet(units);
   }
 
   /** Returns integer map of UnitType. */
@@ -206,7 +221,7 @@ public class UnitCollection extends GameDataComponent implements Collection<Unit
 
   @Override
   public Iterator<Unit> iterator() {
-    return Collections.unmodifiableList(units).iterator();
+    return Collections.unmodifiableSet(units).iterator();
   }
 
   @Override

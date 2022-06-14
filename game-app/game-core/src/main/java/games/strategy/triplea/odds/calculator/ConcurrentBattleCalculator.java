@@ -9,6 +9,8 @@ import games.strategy.engine.data.Unit;
 import games.strategy.engine.framework.GameDataManager;
 import games.strategy.engine.framework.GameDataUtils;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -37,8 +39,7 @@ public class ConcurrentBattleCalculator implements IBattleCalculator {
   // do not let calcing happen while we are setting game data
   private final CountUpAndDownLatch latchSetData = new CountUpAndDownLatch();
   // do not let setting of game data happen multiple times while we offload creating workers and
-  // copying data to a
-  // different thread
+  // copying data to a different thread
   private final CountUpAndDownLatch latchWorkerThreadsCreation = new CountUpAndDownLatch();
 
   // do not let setting of game data happen at same time
@@ -183,10 +184,10 @@ public class ConcurrentBattleCalculator implements IBattleCalculator {
       final GamePlayer attacker,
       final GamePlayer defender,
       final Territory location,
-      final Collection<Unit> attacking,
-      final Collection<Unit> defending,
-      final Collection<Unit> bombarding,
-      final Collection<TerritoryEffect> territoryEffects,
+      Collection<Unit> attacking,
+      Collection<Unit> defending,
+      Collection<Unit> bombarding,
+      Collection<TerritoryEffect> territoryEffects,
       final boolean retreatWhenOnlyAirLeft,
       final int runCount)
       throws IllegalStateException {
@@ -199,6 +200,9 @@ public class ConcurrentBattleCalculator implements IBattleCalculator {
         return new AggregateResults(0);
       }
       final var runCountDistributor = new RunCountDistributor(runCount, workers.size());
+      if (new HashSet<>(workers).size() != workers.size()) {
+        System.err.println("OMG");
+      }
       final AggregateResults results =
           new AggregateResults(
               workers.parallelStream()
@@ -208,10 +212,10 @@ public class ConcurrentBattleCalculator implements IBattleCalculator {
                               attacker,
                               defender,
                               location,
-                              attacking,
-                              defending,
-                              bombarding,
-                              territoryEffects,
+                              List.copyOf(attacking),
+                                  List.copyOf(defending),
+                                  List.copyOf(   bombarding),
+                                  List.copyOf(territoryEffects),
                               retreatWhenOnlyAirLeft,
                               runCountDistributor.nextRunCount()))
                   .map(AggregateResults::getResults)

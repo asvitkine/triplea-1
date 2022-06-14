@@ -43,6 +43,7 @@ public class AddUnits extends Change {
 
   /** Returns an unmodifiable map of unit UUIDs to player names. */
   public static Map<UUID, String> buildUnitOwnerMap(final Collection<Unit> units) {
+    try {
     return units.stream()
         .collect(
             Collectors.toMap(
@@ -53,6 +54,14 @@ public class AddUnits extends Change {
                   }
                   return unit.getOwner().getName();
                 }));
+    } catch (RuntimeException e) {
+      String ss = "-->\n";
+      for (Unit u : units) {
+        ss += "  " + u.getId() + " " + u + "\n";
+      }
+      System.err.println("{" + ss + "}");
+      throw e;
+    }
   }
 
   @Override

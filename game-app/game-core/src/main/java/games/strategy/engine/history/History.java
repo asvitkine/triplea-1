@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Optional;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
+import lombok.Getter;
 
 /**
  * A history of the game. Stored as a tree, the data is organized as Root - Round - Step - Event -
@@ -31,7 +32,7 @@ public class History extends DefaultTreeModel {
   private static final long serialVersionUID = -1769876896869L;
 
   private final HistoryWriter writer = new HistoryWriter(this);
-  private final List<Change> changes = new ArrayList<>();
+  @Getter private final List<Change> changes = new ArrayList<>();
   private final GameData gameData;
   private HistoryPanel panel;
   // Index at which point we are in history. Only valid if seekingEnabled is true.
@@ -185,7 +186,7 @@ public class History extends DefaultTreeModel {
     return new SerializedHistory(this, gameData, changes);
   }
 
-  List<Change> getChanges() {
+  public List<Change> getChanges() {
     return Collections.unmodifiableList(changes);
   }
 

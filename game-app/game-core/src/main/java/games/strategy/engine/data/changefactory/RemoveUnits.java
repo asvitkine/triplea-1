@@ -6,6 +6,7 @@ import games.strategy.engine.data.Unit;
 import games.strategy.engine.data.UnitCollection;
 import games.strategy.engine.data.UnitHolder;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -49,6 +50,51 @@ public class RemoveUnits extends Change {
   protected void perform(final GameState data) {
     final UnitHolder holder = data.getUnitHolder(name, type);
     if (!holder.getUnitCollection().containsAll(units)) {
+      for (Unit e : units) {
+        if (!holder.getUnitCollection().contains(e)) {
+          System.err.println(System.identityHashCode(data) + "|" + "Not contained: " + System.identityHashCode(e) + " / " + e.getId());
+          for (Unit u2 : holder.getUnits()) {
+            if (System.identityHashCode(e) == System.identityHashCode(u2)) {
+              System.err.println(System.identityHashCode(data) +
+                  "|||" + u2 + " -> eq: " + (e == u2) + " / " + e.equals(u2));
+            }
+          }
+          for (Unit u2 : holder.getUnitCollection()) {
+            if (System.identityHashCode(e) == System.identityHashCode(u2)) {
+              System.err.println(
+                  System.identityHashCode(data)
+                      + "|+|"
+                      + u2
+                      + " "
+                      + e.getId()
+                      + " -> eq: "
+                      + (e == u2)
+                      + " / "
+                      + e.equals(u2)
+                      + " => "
+                      + holder.getUnits().contains(u2) + " / "
+                      + List.copyOf(holder.getUnits()).contains(u2) + "/"
+                      + holder.getUnitCollection().contains(u2) + " / "
+                      + holder.getUnitCollection().contains(e));
+            }
+          }
+        }
+      }
+      for (Unit u : holder.getUnits()) {
+        System.err.println(System.identityHashCode(data) + "|" + "U:" + u + " " + System.identityHashCode(u));
+      }
+      for (Unit u : units) {
+        System.err.println(System.identityHashCode(data) + "|" + "RU:" + u + " " + System.identityHashCode(u) + " " +
+            holder.getUnitCollection().contains(u));
+      }
+      var x  = new HashSet<>();
+      x.addAll(units);
+      x.addAll(holder.getUnits());
+      System.err.println(System.identityHashCode(data) + "|" + x.size() + " " + units.size() + " " + holder.getUnits().size());
+      System.err.println(System.identityHashCode(data) + "|" + holder.getUnitCollection().containsAll(units)
+          + " " + holder.getUnits().containsAll(units));
+
+
       throw new IllegalStateException(
           "Not all units present in:"
               + name

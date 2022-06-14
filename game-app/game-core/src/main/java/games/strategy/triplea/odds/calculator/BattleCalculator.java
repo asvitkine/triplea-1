@@ -16,6 +16,7 @@ import games.strategy.triplea.delegate.battle.BattleResults;
 import games.strategy.triplea.delegate.battle.BattleTracker;
 import games.strategy.triplea.delegate.battle.MustFightBattle;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.annotation.Nonnull;
@@ -49,6 +50,8 @@ class BattleCalculator implements IBattleCalculator {
     this(GameDataUtils.createGameDataFromBytes(data, engineVersion).orElse(null));
   }
 
+  boolean calculating = false;
+
   @Override
   public AggregateResults calculate(
       final GamePlayer attacker,
@@ -60,6 +63,8 @@ class BattleCalculator implements IBattleCalculator {
       final Collection<TerritoryEffect> territoryEffects,
       final boolean retreatWhenOnlyAirLeft,
       final int runCount) {
+    Preconditions.checkState(!calculating);
+    calculating= true;
     Preconditions.checkState(
         !isRunning.getAndSet(true), "Can't calculate while operation is still running!");
     try {
@@ -80,9 +85,18 @@ class BattleCalculator implements IBattleCalculator {
           GameDataUtils.translateIntoOtherGameData(bombarding, gameData);
       final Collection<TerritoryEffect> territoryEffects2 =
           GameDataUtils.translateIntoOtherGameData(territoryEffects, gameData);
-      gameData.performChange(ChangeFactory.removeUnits(location2, location2.getUnits()));
-      gameData.performChange(ChangeFactory.addUnits(location2, attackingUnits));
-      gameData.performChange(ChangeFactory.addUnits(location2, defendingUnits));
+      try (GameData.Unlocker ignored = gameData.acquireWriteLock()) {
+
+        gameData.performChange(ChangeFactory.removeUnits(location2, location2.getUnits()));
+        HashSet<Unit> s = new HashSet<>();
+        s.addAll(attackingUnits);
+        s.addAll(defendingUnits);
+        if (s.size() != attackingUnits.size() + defendingUnits.size()) {
+          new Exception().printStackTrace();
+        }
+        gameData.performChange(ChangeFactory.addUnits(location2, attackingUnits));
+        gameData.performChange(ChangeFactory.addUnits(location2, defendingUnits));
+      }
       final long start = System.currentTimeMillis();
       final AggregateResults aggregateResults = new AggregateResults(runCount);
       final BattleTracker battleTracker = new BattleTracker();
@@ -139,8 +153,12 @@ class BattleCalculator implements IBattleCalculator {
       aggregateResults.setTime(System.currentTimeMillis() - start);
       cancelled = false;
       return aggregateResults;
+    } catch (Exception e) {
+      System.err.println("Exc:" + System.identityHashCode(this));
+      throw e;
     } finally {
       isRunning.set(false);
+      calculating= false;
     }
   }
 
