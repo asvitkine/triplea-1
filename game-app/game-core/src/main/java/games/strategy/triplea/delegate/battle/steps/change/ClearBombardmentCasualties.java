@@ -20,9 +20,9 @@ public class ClearBombardmentCasualties implements BattleStep {
   private final BattleActions battleActions;
 
   @Override
-  public List<String> getNames() {
+  public List<StepDetails> getAllStepDetails() {
     return canBombardmentOccur() && clearCasualties()
-        ? List.of(REMOVE_BOMBARDMENT_CASUALTIES)
+        ? List.of(new StepDetails(REMOVE_BOMBARDMENT_CASUALTIES, this))
         : List.of();
   }
 
@@ -39,8 +39,10 @@ public class ClearBombardmentCasualties implements BattleStep {
   }
 
   private boolean clearCasualties() {
-    return !Properties.getNavalBombardCasualtiesReturnFire(
-        battleState.getGameData().getProperties());
+    var x =
+        !Properties.getNavalBombardCasualtiesReturnFire(battleState.getGameData().getProperties());
+    System.err.println("CLEAR_CASUALTIES:" + x);
+    return x;
   }
 
   private boolean canBombardmentOccur() {
